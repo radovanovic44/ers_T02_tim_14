@@ -11,6 +11,7 @@
             while (!kraj)
             {
                 // TODO: Prikaz opcija menija
+                //Console.WriteLine("1. Opcija 1");
             }
         }
     }

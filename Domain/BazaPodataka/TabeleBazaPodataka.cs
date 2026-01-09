@@ -5,8 +5,22 @@ namespace Domain.BazaPodataka
     public class TabeleBazaPodataka
     {
         public List<Korisnik> Korisnici { get; set; } = [];
-        // TODO: Add other database tables as needed
+        public List<VinovaLoza> Loze { get; set; }
+       // public List<Vino> Vina { get; set; }    
+       // public List<Paleta> Palete { get; set; }
+      //  public List<VinskiPodrum> VinskiPodrumi { get; set; }
+      //  public List<Faktura> Fakture { get; set; }
 
-        public TabeleBazaPodataka() { }
+        public TabeleBazaPodataka()
+        {
+            Korisnici = new();
+            Loze = new();
+         //   Vina = new();
+          //  Palete = new();
+          //  VinskiPodrumi = new();
+          //  Fakture = new();
+        }
+
+       
     }
 }

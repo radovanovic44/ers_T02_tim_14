@@ -1,5 +1,7 @@
 ﻿using Database.Repozitorijumi;
+using Database.BazaPodataka;
 using Domain.BazaPodataka;
+using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
@@ -14,19 +16,20 @@ namespace Loger_Bloger
         public static void Main()
         {
             // Baza podataka
-            IBazaPodataka bazaPodataka = null; // TODO: Initialize the database with appropriate implementation
+            IBazaPodataka bazaPodataka = new XMLBazaPodataka();
 
             // Repozitorijumi
             IKorisniciRepozitorijum korisniciRepozitorijum = new KorisniciRepozitorijum(bazaPodataka);
 
             // Servisi
             IAutentifikacijaServis autentifikacijaServis = new AutentifikacioniServis(); // TODO: Pass necessary dependencies
-            // TODO: Add other necessary services
+            
 
             // Ako nema nijednog korisnika u sistemu, dodati dva nova
             if (korisniciRepozitorijum.SviKorisnici().Count() == 0)
             {
-                // TODO: Add initial users to the system
+                korisniciRepozitorijum.DodajKorisnika(new Korisnik("Milos.A", "1234", "Glavni enolog", TipKorisnika.GLAVNI_ENOLOG));
+                korisniciRepozitorijum.DodajKorisnika(new Korisnik("Dimitirije4", "1234", "Kelar majstor", TipKorisnika.KELAR_MAJSTOR));
             }
 
             // Prezentacioni sloj
