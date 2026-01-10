@@ -93,5 +93,38 @@ namespace Services.PakovanjeServisi
 
             return paleteRepozitorijum.DodajPaletu(novaPaleta);
         }
+
+
+        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId, Guid vinoId)
+        {
+            try
+            {
+                Paleta? paleta = PrvaDostupnaPaleta(vinskiPodrumId, vinoId);
+
+                if (paleta == null)
+                {
+                    loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
+                        "Nema dostupne palete, zapocinje pakovanje nove.");
+
+                    paleta = KreirajNovuPaletu(vinskiPodrumId, vinoId);
+                }
+
+                paleta.Status = StatusPalete.Otpremljena;
+
+         //       skladisteServis.PrimiPaletu(paleta);
+
+                loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
+                    $"Paleta '{paleta.Sifra}' je poslata u skladiste.");
+
+                return true;
+            }
+            catch
+            {
+                loggerServis.EvidentirajDogadjaj(TipEvidencije.ERROR,
+                    "Greska prilikom slanja palete u skladiste.");
+
+                return false;
+            }
+        }
     }
 }
