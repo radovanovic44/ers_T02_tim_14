@@ -5,6 +5,7 @@ using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
+using Services.LoggerServisi;
 using Presentation.Authentifikacija;
 using Presentation.Meni;
 using Services.AutenftikacioniServisi;
@@ -22,10 +23,9 @@ namespace Loger_Bloger
             IKorisniciRepozitorijum korisniciRepozitorijum = new KorisniciRepozitorijum(bazaPodataka);
 
             // Servisi
-            IAutentifikacijaServis autentifikacijaServis = new AutentifikacioniServis(); // TODO: Pass necessary dependencies
+            ILoggerServis loggerServis = new Evidencija();
+            IAutentifikacijaServis autentifikacijaServis = new AutentifikacioniServis(korisniciRepozitorijum, loggerServis);
             
-
-            // Ako nema nijednog korisnika u sistemu, dodati dva nova
             if (korisniciRepozitorijum.SviKorisnici().Count() == 0)
             {
                 korisniciRepozitorijum.DodajKorisnika(new Korisnik("Milos.A", "1234", "Glavni enolog", TipKorisnika.GLAVNI_ENOLOG));
