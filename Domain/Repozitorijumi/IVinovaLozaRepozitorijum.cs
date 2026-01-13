@@ -11,6 +11,8 @@ namespace Domain.Repozitorijumi
     {
         void Dodaj(VinovaLoza loza);
 
+        void Azuriraj(VinovaLoza loza);
+
         VinovaLoza? PronadjiPoID(Guid id);
 
         IEnumerable<VinovaLoza> VratiSve();
