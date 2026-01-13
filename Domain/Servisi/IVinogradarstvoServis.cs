@@ -11,8 +11,8 @@ namespace Domain.Servisi
     {
         VinovaLoza PosadiNovuLozu(string naziv, int godinaSadnje, string region);
         void promeniNivoSecera(Guid lozaid, double procenat);
-      //  List<VinovaLoza> oberiLoze(string NazivSorte, int kolicina);
+        List<VinovaLoza> oberiLoze(string NazivSorte, int kolicina);
 
-      //  VinovaLoza PosadiKompenzacionuLozu(double visakSecera);
+        VinovaLoza PosadiKompenzacionuLozu(double visakSecera);
     }
 }
