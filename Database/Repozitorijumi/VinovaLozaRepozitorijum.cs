@@ -20,6 +20,23 @@ namespace Database.Repozitorijumi
         {
             _bazaPodataka.Loze.Add(loza);
         }
+        public void Azuriraj(VinovaLoza loza)
+        {
+            var postojecaLoza = _bazaPodataka.Loze
+                .FirstOrDefault(l => l.Id == loza.Id);
+
+            if (postojecaLoza == null)
+                throw new InvalidOperationException($"Loza sa ID {loza.Id} ne postoji.");
+
+            postojecaLoza.Naziv = loza.Naziv;
+            postojecaLoza.NivoSecera = loza.NivoSecera;
+            postojecaLoza.GodinaSadnje = loza.GodinaSadnje;
+            postojecaLoza.Region = loza.Region;
+            postojecaLoza.Faza = loza.Faza;
+        }
+
+
+
         public VinovaLoza? PronadjiPoID(Guid id)
         {
             return _bazaPodataka.Loze.FirstOrDefault(l => l.Id == id);

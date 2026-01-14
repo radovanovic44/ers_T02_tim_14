@@ -44,7 +44,7 @@ namespace Loger_Bloger
             Console.Clear();
             Console.WriteLine($"Uspešno ste prijavljeni kao: {prijavljen.ImePrezime} ({prijavljen.Uloga})");
 
-            OpcijeMeni meni = new OpcijeMeni(); // TODO: Pass necessary dependencies
+            OpcijeMeni meni = new OpcijeMeni(prijavljen);
             meni.PrikaziMeni();
         }
     }
