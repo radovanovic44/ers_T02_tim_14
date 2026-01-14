@@ -44,6 +44,8 @@ namespace Services.VinogradarstvoServisi
         public void promeniNivoSecera(Guid lozaId,double procenat)
         {
             var loza= _repo.PronadjiPoID(lozaId);
+            if (loza == null)
+                throw new InvalidOperationException($"Loza sa ID {lozaId} ne postoji.");
             loza.NivoSecera += loza.NivoSecera * procenat / 100;
             _repo.Azuriraj(loza);
             _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Promenjen nivo secera loze {lozaId}");
@@ -65,7 +67,6 @@ namespace Services.VinogradarstvoServisi
             }
 
             _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Odbrano {dostupne.Count} loza sorte {NazivSorte}");
-            return dostupne;
             return dostupne;
         }
         

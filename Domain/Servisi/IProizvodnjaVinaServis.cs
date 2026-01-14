@@ -9,7 +9,7 @@ namespace Domain.Servisi
 {
     public interface IProizvodnjaVinaServis
     {
-      //  void zapocniFermentaciju(KategorijaVina kategorija, int brojFlasa, double zapreminaFlase);
+        void zapocniFermentaciju(KategorijaVina kategorija, int brojFlasa, double zapreminaFlase);
         List<Vino> ZahtevZaVino(KategorijaVina kategorija, int kolicina);
     }
 }

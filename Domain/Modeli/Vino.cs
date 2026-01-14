@@ -18,6 +18,8 @@ namespace Domain.Modeli
         public Guid VinovaLozaId { get; set; }
         public DateTime DatumFlasiranja { get; set; }
 
+
+        public Vino() { }
         public Vino(Guid id,string naziv,KategorijaVina kategorija,double zapremina,string sifraserije,Guid vinovalozaid,DateTime datumflasiranja) { 
             
             Id = id;
