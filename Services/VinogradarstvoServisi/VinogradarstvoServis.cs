@@ -49,7 +49,38 @@ namespace Services.VinogradarstvoServisi
             _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Promenjen nivo secera loze {lozaId}");
         }
 
+
+        public List<VinovaLoza> oberiLoze(string NazivSorte, int kolicina)
+        {
+            var dostupne = _repo.VratiSve()
+                .Where(l => l.Naziv == NazivSorte && l.Faza == FazaZrelosti.SpremnaZaBerbu)
+                .Take(kolicina)
+                .ToList();
+
+
+            foreach(var loza in dostupne)
+            {
+                loza.Faza = FazaZrelosti.Obrana;
+                _repo.Azuriraj(loza);
+            }
+
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Odbrano {dostupne.Count} loza sorte {NazivSorte}");
+            return dostupne;
+            return dostupne;
+        }
         
+
+        public VinovaLoza PosadiKompenzacionuLozu(double visakSecera)
+        {
+            var novaLoza = PosadiNovuLozu("Kompenzaciona", DateTime.Now.Year, "Toskana");
+            novaLoza.NivoSecera -= visakSecera;
+
+            _repo.Azuriraj(novaLoza);
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Kompenzacija secera : -{visakSecera} Brix");
+
+            return novaLoza;
+
+        }
 
 
 
