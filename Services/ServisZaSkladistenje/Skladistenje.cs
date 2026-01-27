@@ -1,4 +1,5 @@
-﻿using Domain.Enumeracije;
+﻿using Domain.BazaPodataka;
+using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
@@ -9,13 +10,16 @@ namespace Services.SkladistenjeServisi
     {
         private readonly IPaleteRepozitorijum paleteRepozitorijum;
         private readonly ILoggerServis loggerServis;
+        private readonly TabeleBazaPodataka _bazaPodataka;
 
         public VinskiPodrumServis(
             IPaleteRepozitorijum repozitorijum,
-            ILoggerServis logger)
+            ILoggerServis logger,
+            TabeleBazaPodataka bazaPodataka)
         {
             paleteRepozitorijum = repozitorijum;
             loggerServis = logger;
+            _bazaPodataka = bazaPodataka;
         }
         public void PrimiPaletu(Paleta paleta)
         {
@@ -51,6 +55,10 @@ namespace Services.SkladistenjeServisi
                 $"Vinski podrum isporucio {isporucene.Count} paleta.");
 
             return isporucene;
+        }
+        public bool ImaNaStanju(Guid vinoID)
+        {
+            return _bazaPodataka.Palete.Any(p => p.VinoId == vinoID);
         }
     }
 }
