@@ -1,7 +1,9 @@
 ﻿using Domain.Enumeracije;
 using Domain.Modeli;
+using Domain.PomocneMetode;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
+using Domain.PomocneMetode;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -121,9 +123,9 @@ namespace Services.ProizvodnjaServisi
                     Guid.NewGuid(),
                     $"{kategorijaVina} vino",
                     kategorijaVina,
-                    zapreminaFlase,                 // <- tvoj property Zapremina
-                    NapraviSifruSerije(),           // <- tvoj property SifraSerije
-                    loza.Id,                        // <- tvoj property VinovaLozaId
+                    zapreminaFlase,                 
+                    GeneratorSifreVina(),          
+                    loza.Id,                        
                     DateTime.Now
                  );
 
@@ -132,10 +134,7 @@ namespace Services.ProizvodnjaServisi
         }
 
 
-        private string NapraviSifruSerije()
-        {
-            return $"VN-2025-{Guid.NewGuid()}";
-        }
+       
 
 
     }
