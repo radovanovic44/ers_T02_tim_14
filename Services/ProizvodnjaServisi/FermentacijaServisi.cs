@@ -3,7 +3,6 @@ using Domain.Modeli;
 using Domain.PomocneMetode;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
-using Domain.PomocneMetode;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -118,17 +117,20 @@ namespace Services.ProizvodnjaServisi
             for(int i = 0; i < brojFlasa; i++)
             {
                 var loza = lozeZaProces[i % lozeZaProces.Count];
-
+                var id = Guid.NewGuid();
+                var sifra = GeneratorSifreVina.GenerisiSifruVina(id);
                 var vino = new Vino(
-                    Guid.NewGuid(),
+                    id,
                     $"{kategorijaVina} vino",
                     kategorijaVina,
                     zapreminaFlase,                 
-                    GeneratorSifreVina(),          
-                    loza.Id,                        
+                    sifra,          
+                    loza.Id,                       
                     DateTime.Now
                  );
 
+                _vinoRepo.Dodaj(vino);
+                _proizvedena.Enqueue(vino);
 
             }
         }
