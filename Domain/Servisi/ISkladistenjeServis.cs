@@ -12,5 +12,6 @@ namespace Domain.Servisi
     {
         void PrimiPaletu(Paleta paleta);
         List<Paleta> IsporuciPalete(int brojPaleta);
+        bool ImaNaStanju(Guid vinoId);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Domain.Enumeracije;
+﻿using Domain.BazaPodataka;
+using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
@@ -9,13 +10,16 @@ namespace Services.SkladistenjeServisi
     {
         private readonly IPaleteRepozitorijum paleteRepozitorijum;
         private readonly ILoggerServis loggerServis;
+        private readonly TabeleBazaPodataka _bazapodataka;
 
         public LokalniKelarServis(
             IPaleteRepozitorijum repozitorijum,
-            ILoggerServis logger)
+            ILoggerServis logger,
+            TabeleBazaPodataka bazapodataka)
         {
             paleteRepozitorijum = repozitorijum;
             loggerServis = logger;
+            _bazapodataka = bazapodataka;
         }
         public void PrimiPaletu(Paleta paleta)
         {
@@ -52,6 +56,10 @@ namespace Services.SkladistenjeServisi
                 $"Lokalni kelar isporucio {isporucene.Count} paleta.");
 
             return isporucene;
+        }
+        public bool ImaNaStanju(Guid vinoID)
+        {
+            return _bazapodataka.Palete.Any(p => p.VinoId == vinoID);
         }
     }
 }

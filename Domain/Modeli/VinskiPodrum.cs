@@ -7,7 +7,7 @@ using Domain.Modeli;
 
 namespace Domain.Modeli
 {
-    internal class VinskiPodrum
+    public class VinskiPodrum
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
