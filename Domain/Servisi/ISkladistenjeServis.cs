@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Domain.Modeli;
+﻿using Domain.Modeli;
 
 namespace Domain.Servisi
 {
     public interface ISkladistenjeServis
     {
-        void PrimiPaletu(Paleta paleta);
+        bool PrimiPaletu(Paleta paleta);
         List<Paleta> IsporuciPalete(int brojPaleta);
+
+        // da li postoji bar jedno vino sa datim ID u skladistu
         bool ImaNaStanju(Guid vinoId);
     }
 }

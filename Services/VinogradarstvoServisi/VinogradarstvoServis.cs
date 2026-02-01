@@ -1,12 +1,8 @@
-﻿using Domain.Servisi;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Domain.Repozitorijumi;
+﻿using Domain.Enumeracije;
 using Domain.Modeli;
-using Domain.Enumeracije;
+using Domain.Repozitorijumi;
+using Domain.Servisi;
+
 namespace Services.VinogradarstvoServisi
 {
     public class VinogradarstvoServis : IVinogradarstvoServis
@@ -15,76 +11,71 @@ namespace Services.VinogradarstvoServisi
         private readonly ILoggerServis _logger;
         private readonly Random _random = new();
 
-
-        public VinogradarstvoServis(IVinovaLozaRepozitorijum repo,ILoggerServis logger)
+        public VinogradarstvoServis(IVinovaLozaRepozitorijum repo, ILoggerServis logger)
         {
             _repo = repo;
             _logger = logger;
         }
 
-        public VinovaLoza PosadiNovuLozu(string naziv,int godinaSadnje, string region)
+        public VinovaLoza PosadiNovuLozu(string naziv, int godinaSadnje, string region)
         {
-            var loza = new VinovaLoza
-            (
-               Guid.NewGuid(),
-               naziv,
-               RandomSecer(),
-               godinaSadnje,
-               region,
-               FazaZrelosti.Posadjena
-
-
+            var loza = new VinovaLoza(
+                naziv: naziv,
+                nivoSecera: RandomSecer(),
+                godinaSadnje: godinaSadnje,
+                region: region,
+                faza: FazaZrelosti.Posadjena
             );
+
             _repo.Dodaj(loza);
-            _logger.EvidentirajDogadjaj(TipEvidencije.INFO,$"Posađena nova loza ({loza.NivoSecera} Brix)");
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Posađena nova loza ({loza.NivoSecera} Brix).");
             return loza;
         }
 
-        public void promeniNivoSecera(Guid lozaId,double procenat)
+        public bool PromeniNivoSecera(Guid lozaId, double procenat)
         {
-            var loza= _repo.PronadjiPoID(lozaId);
+            var loza = _repo.PronadjiPoID(lozaId);
             if (loza == null)
-                throw new InvalidOperationException($"Loza sa ID {lozaId} ne postoji.");
-            loza.NivoSecera += loza.NivoSecera * procenat / 100;
-            _repo.Azuriraj(loza);
-            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Promenjen nivo secera loze {lozaId}");
+            {
+                _logger.EvidentirajDogadjaj(TipEvidencije.ERROR, $"Loza sa ID {lozaId} ne postoji.");
+                return false;
+            }
+
+            loza.NivoSecera += loza.NivoSecera * procenat / 100.0;
+            loza.NivoSecera = Math.Round(loza.NivoSecera, 2);
+
+            var ok = _repo.Azuriraj(loza);
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Promenjen nivo secera loze {lozaId} za {procenat}%.");
+            return ok;
         }
 
-
-        public List<VinovaLoza> oberiLoze(string NazivSorte, int kolicina)
+        public List<VinovaLoza> OberiLoze(string nazivSorte, int kolicina)
         {
             var dostupne = _repo.VratiSve()
-                .Where(l => l.Naziv == NazivSorte && l.Faza == FazaZrelosti.SpremnaZaBerbu)
+                .Where(l => l.Naziv == nazivSorte && l.Faza == FazaZrelosti.SpremnaZaBerbu)
                 .Take(kolicina)
                 .ToList();
 
-
-            foreach(var loza in dostupne)
+            foreach (var loza in dostupne)
             {
                 loza.Faza = FazaZrelosti.Obrana;
                 _repo.Azuriraj(loza);
             }
 
-            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Odbrano {dostupne.Count} loza sorte {NazivSorte}");
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Odbrano {dostupne.Count} loza sorte {nazivSorte}.");
             return dostupne;
         }
-        
 
         public VinovaLoza PosadiKompenzacionuLozu(double visakSecera)
         {
             var novaLoza = PosadiNovuLozu("Kompenzaciona", DateTime.Now.Year, "Toskana");
-            novaLoza.NivoSecera -= visakSecera;
+            novaLoza.NivoSecera = Math.Round(novaLoza.NivoSecera - visakSecera, 2);
 
             _repo.Azuriraj(novaLoza);
-            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Kompenzacija secera : -{visakSecera} Brix");
-
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Kompenzacija secera: -{visakSecera} Brix.");
             return novaLoza;
-
         }
 
-
-
-
-        private double RandomSecer()=> Math.Round(15.0 + _random.NextDouble() * 13.0, 2);
+        private double RandomSecer() => Math.Round(15.0 + _random.NextDouble() * 13.0, 2);
     }
 }

@@ -3,7 +3,7 @@ namespace Domain.Enumeracije
     public enum StatusPalete
     {
         Aktivna,            // aktivna i koristi se za pakovanje
-        SpremnaZaIsporuku,  // puna i spremna da se otpremi iz podruma
+        Upakovana,  // puna i spremna da se otpremi iz podruma
         Otpremljena,        // napustila vinski podrum
         Otvorena,           // otvorena za dodatno pakovanje / izmene
         Uklonjena           // izbacena iz upotrebe

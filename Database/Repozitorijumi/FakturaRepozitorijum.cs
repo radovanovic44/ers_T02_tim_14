@@ -1,35 +1,34 @@
 ﻿using Domain.BazaPodataka;
-using Domain.Repozitorijumi;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Domain.Modeli;
+using Domain.Repozitorijumi;
 
 namespace Database.Repozitorijumi
 {
-    public class FakturaRepozitorijum: IFakturaRepozitorijum
+    public class FakturaRepozitorijum : IFakturaRepozitorijum
     {
-        private readonly TabeleBazaPodataka _bazaPodataka;
-        public FakturaRepozitorijum(TabeleBazaPodataka bazaPodataka)
+        private readonly IBazaPodataka _baza;
+
+        public FakturaRepozitorijum(IBazaPodataka baza)
         {
-            _bazaPodataka = bazaPodataka;
-        }
-        public void Dodaj(Faktura faktura)
-        {
-            _bazaPodataka.Fakture.Add(faktura);
-        }
-        public List<Faktura> VratiSve()
-        {
-            return _bazaPodataka.Fakture;
-        }
-        public Faktura? PronadjipoID(Guid Id)
-        {
-            return _bazaPodataka.Fakture.FirstOrDefault(f => f.Id == Id);
+            _baza = baza;
         }
 
+        public bool Dodaj(Faktura faktura)
+        {
+            try
+            {
+                _baza.Tabele.Fakture.Add(faktura);
+                return _baza.SacuvajPromene();
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
-
+        public IEnumerable<Faktura> VratiSve()
+        {
+            return _baza.Tabele.Fakture;
+        }
     }
 }

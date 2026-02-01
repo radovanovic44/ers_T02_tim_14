@@ -1,51 +1,69 @@
-﻿using Database.Repozitorijumi;
-using Database.BazaPodataka;
+﻿using Database.BazaPodataka;
+using Database.Repozitorijumi;
 using Domain.BazaPodataka;
 using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
-using Services.LoggerServisi;
 using Presentation.Authentifikacija;
 using Presentation.Meni;
 using Services.AutenftikacioniServisi;
+using Services.LoggerServisi;
+using Services.PakovanjeServisi;
+using Services.ProdajaServisi;
+using Services.ProizvodnjaServisi;
+using Services.SkladistenjeServisi;
+using Services.VinogradarstvoServisi;
 
-namespace Loger_Bloger
+namespace ERS_PROJEKAT
 {
     public class Program
     {
+        // Main mora ostati void (entry point)
         public static void Main()
         {
-            // Baza podataka
-            IBazaPodataka bazaPodataka = new XMLBazaPodataka();
+            // Baza podataka (XML) + inicijalni podaci su u konstruktoru ako fajl ne postoji
+            IBazaPodataka baza = new XMLBazaPodataka();
 
             // Repozitorijumi
-            IKorisniciRepozitorijum korisniciRepozitorijum = new KorisniciRepozitorijum(bazaPodataka);
+            IKorisniciRepozitorijum korisniciRepo = new KorisniciRepozitorijum(baza);
+            IVinovaLozaRepozitorijum lozeRepo = new VinovaLozaRepozitorijum(baza);
+            IVinoRepozitorijum vinoRepo = new VinoRepozitorijum(baza);
+            IPaleteRepozitorijum paleteRepo = new PaleteRepozitorijum(baza);
+            IFakturaRepozitorijum faktureRepo = new FakturaRepozitorijum(baza);
 
             // Servisi
-            ILoggerServis loggerServis = new Evidencija();
-            IAutentifikacijaServis autentifikacijaServis = new AutentifikacioniServis(korisniciRepozitorijum, loggerServis);
-            
-            if (korisniciRepozitorijum.SviKorisnici().Count() == 0)
-            {
-                korisniciRepozitorijum.DodajKorisnika(new Korisnik("Milos.A", "1234", "Glavni enolog", TipKorisnika.GLAVNI_ENOLOG));
-                korisniciRepozitorijum.DodajKorisnika(new Korisnik("Dimitirije4", "1234", "Kelar majstor", TipKorisnika.KELAR_MAJSTOR));
-            }
+            ILoggerServis logger = new Evidencija();
+            IAutentifikacijaServis auth = new AutentifikacioniServis(korisniciRepo, logger);
 
-            // Prezentacioni sloj
-            AutentifikacioniMeni am = new AutentifikacioniMeni(autentifikacijaServis);
-            Korisnik prijavljen = new Korisnik();
+            IVinogradarstvoServis vinogradarstvo = new VinogradarstvoServis(lozeRepo, logger);
+            IProizvodnjaVinaServis proizvodnja = new FermentacijaServisi(lozeRepo, vinoRepo, vinogradarstvo, logger);
 
-            while (am.TryLogin(out prijavljen) == false)
+            // Login
+            var am = new AutentifikacioniMeni(auth);
+            Korisnik prijavljen;
+
+            while (!am.TryLogin(out prijavljen))
             {
                 Console.WriteLine("Pogrešno korisničko ime ili lozinka. Pokušajte ponovo.");
             }
 
-            Console.Clear();
-            Console.WriteLine($"Uspešno ste prijavljeni kao: {prijavljen.ImePrezime} ({prijavljen.Uloga})");
+            // biramo implementaciju skladistenja po ulozi
+            ISkladistenjeServis skladiste = new VinskiPodrumServis(paleteRepo, logger, baza.Tabele);
+                
 
-            OpcijeMeni meni = new OpcijeMeni(prijavljen);
-            meni.PrikaziMeni();
+            IPakovanjeServis pakovanje = new PakovanjeServis(paleteRepo, vinoRepo,proizvodnja, skladiste, logger);
+            IProdajaServis prodaja = new ProdajaServisi(vinoRepo, skladiste, faktureRepo, logger);
+
+            // Meniji
+            var katalogMeni = new KatalogVinaMeni(prodaja);
+            var faktureMeni = new FaktureMeni(prodaja);
+
+            // uzimamo prvi podrum iz baze (inicijalni)
+            var podrumId = baza.Tabele.VinskiPodrum.FirstOrDefault()?.Id ?? Guid.NewGuid();
+
+            var opcije = new OpcijeMeni(prijavljen, proizvodnja, pakovanje, katalogMeni, faktureMeni, podrumId);
+            opcije.PrikaziMeni();
         }
     }
 }

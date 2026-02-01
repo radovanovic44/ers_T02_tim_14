@@ -13,9 +13,11 @@ namespace Domain.Modeli
 
         public string Naziv { get; set; } = string.Empty;
 
-        public int Temperatura {  get; set; } = 0;
+        public int Temperatura { get; set; } = 0;
 
         public int MaxBrojPaleta { get; set; } = 0;
+
+        public List<Paleta> palete { get; set; } = new List<Paleta>();
 
         public VinskiPodrum() { }
 
@@ -25,6 +27,7 @@ namespace Domain.Modeli
             Naziv = naziv;
             Temperatura = temperatura;
             MaxBrojPaleta = maxBrojPaleta;
+            palete = new List<Paleta>();
         }
     }
 }

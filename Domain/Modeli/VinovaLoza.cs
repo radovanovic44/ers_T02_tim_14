@@ -1,33 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Domain.Enumeracije;
+﻿using Domain.Enumeracije;
 
 namespace Domain.Modeli
 {
-   
-   
-
     public class VinovaLoza
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Naziv { get; set; } = string.Empty;
-        public double NivoSecera { get; set; } = 0;     //Ovo nam mora biti u opsegu od 15 do 28
+
+        // u opsegu 15.0 - 28.0 Brix
+        public double NivoSecera { get; set; }
+
         public int GodinaSadnje { get; set; }
         public string Region { get; set; } = string.Empty;
-        public FazaZrelosti Faza { get; set; }
+        public FazaZrelosti Faza { get; set; } = FazaZrelosti.Posadjena;
 
-        
-        public VinovaLoza(Guid id,string naziv,double nivosecera,int godinasadnje,string region,FazaZrelosti faza) {
-            Id = id;
+        public VinovaLoza() { }
+
+        public VinovaLoza(string naziv, double nivoSecera, int godinaSadnje, string region, FazaZrelosti faza = FazaZrelosti.Posadjena)
+        {
+            Id = Guid.NewGuid();
             Naziv = naziv;
-            NivoSecera = nivosecera;
-            GodinaSadnje = godinasadnje;
+            NivoSecera = nivoSecera;
+            GodinaSadnje = godinaSadnje;
             Region = region;
             Faza = faza;
         }
     }
-
 }

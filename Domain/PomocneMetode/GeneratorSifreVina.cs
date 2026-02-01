@@ -11,9 +11,9 @@ namespace Domain.PomocneMetode
     {
         public static string GenerisiSifruVina(Guid Id)
         {
-            string Id_naziv=Id.ToString();
+            string Id_naziv = Id.ToString();
             string godina = DateTime.Now.Year.ToString();
-            
+
             string sifraVina = $"VN-{godina}-{Id_naziv}";
             return sifraVina;
         }

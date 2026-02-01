@@ -1,15 +1,14 @@
-using System;
+using Domain.Enumeracije;
 using Domain.Modeli;
 
 namespace Domain.Servisi
 {
     public interface IPakovanjeServis
     {
-        // Pakuje zadatu kolicinu pakovanja vina u palete za dati podrum i vino.
-        // Vraca par: (stvarno upakovano, paleta u koju je upakovano).
-        (bool, Paleta) PakujeVinoUPaletu(Guid vinskiPodrumId, Guid vinoId, int zeljenaKolicinaPakovanja);
+        // Pakuje vina u paletu (po kategoriji i zapremini flase) i vraca rezultat i kreiranu paletu.
+        (bool, Paleta) UpakujVina(Guid vinskiPodrumId, KategorijaVina kategorija, int brojFlasa, double zapreminaFlase);
 
-        // Vraca prvu dostupnu paletu za dati podrum i vino.
-        Paleta? PrvaDostupnaPaleta(Guid vinskiPodrumId, Guid vinoId);
+        // Salje prvu upakovanu paletu u skladiste (oznaci je kao otpremljenu).
+        bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId);
     }
 }

@@ -4,8 +4,8 @@ namespace Domain.Modeli
 {
     public class Korisnik
     {
-        public long Id { get; set; } = 0;
-        public string KorisnickoIme { get; set; } = string.Empty;
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string KorisnickoIme { get; set; } = string.Empty; // jedinstveno
         public string Lozinka { get; set; } = string.Empty;
         public string ImePrezime { get; set; } = string.Empty;
         public TipKorisnika Uloga { get; set; }
@@ -14,6 +14,7 @@ namespace Domain.Modeli
 
         public Korisnik(string korisnickoIme, string lozinka, string imePrezime, TipKorisnika tipKorisnika)
         {
+            Id = Guid.NewGuid();
             KorisnickoIme = korisnickoIme;
             Lozinka = lozinka;
             ImePrezime = imePrezime;

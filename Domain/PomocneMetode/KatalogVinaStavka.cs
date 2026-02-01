@@ -10,9 +10,11 @@ namespace Domain.PomocneMetode
 {
     public class KatalogVinaStavka
     {
-        public Guid VinoId { get; set;}= Guid.NewGuid();
+        public Guid VinoId { get; set; } = Guid.NewGuid();
         public string Naziv { get; set; } = string.Empty;
         public KategorijaVina Kategorija { get; set; }
         public double Zapremina { get; set; } = 0;
+
+        public int BrojFlasa { get; set; }
     }
 }

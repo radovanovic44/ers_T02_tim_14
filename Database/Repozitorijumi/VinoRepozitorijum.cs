@@ -1,37 +1,47 @@
-﻿using Domain.Repozitorijumi;
-using Domain.Modeli;
+﻿using Domain.BazaPodataka;
 using Domain.Enumeracije;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Domain.BazaPodataka;
+using Domain.Modeli;
+using Domain.Repozitorijumi;
 
 namespace Database.Repozitorijumi
 {
-    public class VinoRepozitorijum:IVinoRepozitorijum
+    public class VinoRepozitorijum : IVinoRepozitorijum
     {
-        private readonly TabeleBazaPodataka _bazaPodataka;
-        public void Dodaj(Vino vino)
+        private readonly IBazaPodataka _baza;
+
+        public VinoRepozitorijum(IBazaPodataka baza)
         {
-            _bazaPodataka.Vina.Add(vino);
+            _baza = baza;
         }
+
+        public bool Dodaj(Vino vino)
+        {
+            try
+            {
+                _baza.Tabele.Vina.Add(vino);
+                return _baza.SacuvajPromene();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public Vino? PronadjiPoId(Guid id)
         {
-            return _bazaPodataka.Vina.FirstOrDefault(v => v.Id == id);
+            return _baza.Tabele.Vina.FirstOrDefault(v => v.Id == id);
         }
-        public IEnumerable<Vino> PronadjiPoKategoriji(KategorijaVina kategorija)
-        {
-            return _bazaPodataka.Vina.Where(v => v.Kategorija == kategorija);
-        }
-        public IEnumerable<Vino> PronadjiPoVinovojLozi(Guid vinovaLozaId)
-        {
-            return _bazaPodataka.Vina.Where(v => v.VinovaLozaId == vinovaLozaId);
-        }
+
         public IEnumerable<Vino> VratiSve()
         {
-            return _bazaPodataka.Vina;
+            return _baza.Tabele.Vina;
         }
+
+        public IEnumerable<Vino> PronadjiPoKategoriji(KategorijaVina kategorija)
+        {
+            return _baza.Tabele.Vina.Where(v => v.Kategorija == kategorija);
+        }
+
+        
     }
 }

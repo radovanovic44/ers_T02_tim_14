@@ -13,12 +13,12 @@ namespace Domain.Servisi
     {
         IEnumerable<KatalogVinaStavka> VratiKatalogVina();
 
-       Faktura KreirajFakturu(
-       Guid vinoId,
-       int kolicina,
-       TipProdaje tipProdaje,
-       NacinPlacanja nacinPlacanja,
-       decimal cenaPoFlasi );
+        Faktura KreirajFakturu(
+        Guid vinoId,
+        int kolicina,
+        TipProdaje tipProdaje,
+        NacinPlacanja nacinPlacanja,
+        decimal cenaPoFlasi);
         List<Faktura> VratiSveFakture();
     }
 }

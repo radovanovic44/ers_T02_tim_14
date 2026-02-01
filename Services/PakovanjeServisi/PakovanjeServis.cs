@@ -7,122 +7,122 @@ namespace Services.PakovanjeServisi
 {
     public class PakovanjeServis : IPakovanjeServis
     {
-        IPaleteRepozitorijum paleteRepozitorijum;
-        ILoggerServis loggerServis;
+        private readonly IPaleteRepozitorijum _paleteRepo;
+        private readonly IProizvodnjaVinaServis _proizvodnjaVina;
+        private readonly ISkladistenjeServis _skladistenje;
+        private readonly ILoggerServis _logger;
+        private readonly IVinoRepozitorijum _vinoRepo;
 
-        public PakovanjeServis(IPaleteRepozitorijum repozitorijum, ILoggerServis logger)
+        // Koliko boca staje u jednu paletu (nije zadato u specifikaciji, pa biramo razumnu granicu)
+        private const int MAX_FLASA_PO_PALETI = 24;
+
+        public PakovanjeServis(
+            IPaleteRepozitorijum paleteRepo,
+            IVinoRepozitorijum vinoRepo,
+            IProizvodnjaVinaServis proizvodnjaVina,
+            ISkladistenjeServis skladistenje,
+            ILoggerServis logger)
         {
-            paleteRepozitorijum = repozitorijum;
-            loggerServis = logger;
+            _paleteRepo = paleteRepo;
+            _vinoRepo = vinoRepo;
+            _proizvodnjaVina = proizvodnjaVina;
+            _skladistenje = skladistenje;
+            _logger = logger;
         }
 
-        public Paleta? PrvaDostupnaPaleta(Guid vinskiPodrumId, Guid vinoId)
+        public (bool, Paleta) UpakujVina(Guid vinskiPodrumId, KategorijaVina kategorija, int brojFlasa, double zapreminaFlase)
         {
             try
             {
-                foreach (Paleta paleta in paleteRepozitorijum.SvePalete())
+                if (brojFlasa <= 0)
                 {
-                    if (paleta.VinskiPodrumId == vinskiPodrumId &&
-                        paleta.VinoId == vinoId &&
-                        (paleta.Status == StatusPalete.Aktivna ||
-                         paleta.Status == StatusPalete.Otvorena))
-                    {
-                        return paleta;
-                    }
-                }
-
-                return null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public (bool, Paleta) PakujeVinoUPaletu(Guid vinskiPodrumId, Guid vinoId, int zeljenaKolicinaPakovanja)
-        {
-            try
-            {
-                if (zeljenaKolicinaPakovanja <= 0)
-                {
-                    loggerServis.EvidentirajDogadjaj(TipEvidencije.WARNING,
-                        "Pokusaj pakovanja sa nevalidnom kolicinom.");
+                    _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, "Pokusaj pakovanja sa nevalidnom kolicinom.");
                     return (false, new Paleta());
                 }
 
-                Paleta? paleta = PrvaDostupnaPaleta(vinskiPodrumId, vinoId);
-
-                if (paleta == null || paleta.Sifra == string.Empty)
+                if (brojFlasa > MAX_FLASA_PO_PALETI)
                 {
-                    paleta = KreirajNovuPaletu(vinskiPodrumId, vinoId);
-                    loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
-                        $"Kreirana je nova paleta '{paleta.Sifra}' za vino '{vinoId}'.");
+                    _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, $"Ogranicenje: max {MAX_FLASA_PO_PALETI} flasa po paleti.");
+                    brojFlasa = MAX_FLASA_PO_PALETI;
                 }
 
-                paleta.TrenutniBrojPakovanja += zeljenaKolicinaPakovanja;
-                paleta.Status = StatusPalete.Otvorena;
+                // prvo probamo da uzmemo proizvedena vina
+                var vino = _proizvodnjaVina.ZahtevZaVino(
+                     _vinoRepo.VratiSve()
+                    .Where(v => v.Kategorija == kategorija)
+                    .Where(v => !_paleteRepo.SvePalete().Any(p => p.Vino != null && p.Vino.Id == v.Id))
+                    .Select(v => v.Id)
+                    .FirstOrDefault(),
+                    brojFlasa);
+                var paleta = new Paleta();
+                // ako nema dovoljno, pokreni fermentaciju na zahtev
+                if (vino.KolicinaFlasa < brojFlasa)
+                {
+                    var okFer = _proizvodnjaVina.ZapocniFermentaciju(kategorija, brojFlasa - vino.KolicinaFlasa, zapreminaFlase);
+                    if (!okFer)
+                        return (false, new Paleta());
 
-                // posto IPaleteRepozitorijum nema AzurirajPaletu,
-                // oslanjamo se na to da radimo nad istom listom u bazi
-                // i da ce promena biti sacuvana prilikom sledeceg SacuvajPromene().
+                    var dopuna = _proizvodnjaVina.ZahtevZaVino(
+                     _vinoRepo.VratiSve()
+                    .Where(v => v.Kategorija == kategorija)
+                    .Where(v => !_paleteRepo.SvePalete().Any(p => p.Vino != null && p.Vino.Id == v.Id))
+                    .Select(v => v.Id)
+                    .FirstOrDefault(),
+                    brojFlasa);
 
-                loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
-                    $"Upakovano je {zeljenaKolicinaPakovanja} pakovanja na paletu '{paleta.Sifra}'.");
+                    paleta.Sifra = $"PL-{DateTime.Now:yyyy}-{paleta.Id}";
+                    paleta.AdresaOdredista = string.Empty;
+                    paleta.VinskiPodrumId = vinskiPodrumId;
+                    paleta.Vino = dopuna;
+                    paleta.Status = StatusPalete.Upakovana;
+
+                }
+                else
+                {
+                    paleta.Sifra = $"PL-{DateTime.Now:yyyy}-{paleta.Id}";
+                    paleta.AdresaOdredista = string.Empty;
+                    paleta.VinskiPodrumId = vinskiPodrumId;
+                    paleta.Vino = vino;
+                    paleta.Status = StatusPalete.Upakovana;
+                }
+
+                _paleteRepo.DodajPaletu(paleta);
+
+                _logger.EvidentirajDogadjaj(
+                    TipEvidencije.INFO,
+                    $"Upakovana paleta {paleta.Sifra} ({paleta.Vino.KolicinaFlasa} flasa) - kategorija {kategorija}.");
 
                 return (true, paleta);
             }
-            catch
+            catch (Exception ex)
             {
-                loggerServis.EvidentirajDogadjaj(TipEvidencije.ERROR,
-                    "Greska prilikom pakovanja vina u paletu.");
+                _logger.EvidentirajDogadjaj(TipEvidencije.ERROR, $"Greska pakovanja: {ex.Message}");
                 return (false, new Paleta());
             }
         }
 
-        private Paleta KreirajNovuPaletu(Guid vinskiPodrumId, Guid vinoId)
-        {
-            string novaSifra = Guid.NewGuid().ToString("N");
-
-            Paleta novaPaleta = new Paleta(
-                sifra: novaSifra,
-                adresaOdredista: string.Empty,
-                vinskiPodrumId: vinskiPodrumId,
-                vinoId: vinoId,
-                trenutniBrojPakovanja: 0,
-                status: StatusPalete.Aktivna);
-
-            return paleteRepozitorijum.DodajPaletu(novaPaleta);
-        }
-
-
-        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId, Guid vinoId)
+        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId)
         {
             try
             {
-                Paleta? paleta = PrvaDostupnaPaleta(vinskiPodrumId, vinoId);
+                var paleta = _paleteRepo.SvePalete()
+                    .FirstOrDefault(p => p.VinskiPodrumId == vinskiPodrumId && p.Status == StatusPalete.Upakovana);
 
                 if (paleta == null)
                 {
-                    loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
-                        "Nema dostupne palete, zapocinje pakovanje nove.");
-
-                    paleta = KreirajNovuPaletu(vinskiPodrumId, vinoId);
+                    _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, "Nema dostupne upakovane palete za slanje.");
+                    return false;
                 }
 
                 paleta.Status = StatusPalete.Otpremljena;
 
-         //       skladisteServis.PrimiPaletu(paleta);
-
-                loggerServis.EvidentirajDogadjaj(TipEvidencije.INFO,
-                    $"Paleta '{paleta.Sifra}' je poslata u skladiste.");
-
-                return true;
+                var ok = _skladistenje.PrimiPaletu(paleta);
+                _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Paleta '{paleta.Sifra}' poslata u skladiste.");
+                return ok;
             }
-            catch
+            catch (Exception ex)
             {
-                loggerServis.EvidentirajDogadjaj(TipEvidencije.ERROR,
-                    "Greska prilikom slanja palete u skladiste.");
-
+                _logger.EvidentirajDogadjaj(TipEvidencije.ERROR, $"Greska slanja palete: {ex.Message}");
                 return false;
             }
         }

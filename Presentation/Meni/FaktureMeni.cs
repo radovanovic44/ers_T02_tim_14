@@ -1,10 +1,5 @@
 ﻿using Domain.Enumeracije;
 using Domain.Servisi;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Presentation.Meni
 {
@@ -17,26 +12,27 @@ namespace Presentation.Meni
             _prodaja = prodaja;
         }
 
-        public void KreirajFakturu()
+        public bool KreirajFakturu()
         {
-            Console.Write("Unesi ID vina : ");
+            Console.Write("Unesi ID vina: ");
             if (!Guid.TryParse(Console.ReadLine(), out var vinoId))
             {
-                Console.WriteLine("Neispravan Id.");
-                return;
+                Console.WriteLine("Neispravan ID.");
+                return false;
             }
+
             Console.Write("Količina: ");
             if (!int.TryParse(Console.ReadLine(), out var kolicina) || kolicina <= 0)
             {
                 Console.WriteLine("Neispravna količina.");
-                return;
+                return false;
             }
 
-            Console.Write("Cena po komadu : ");
+            Console.Write("Cena po flasi: ");
             if (!decimal.TryParse(Console.ReadLine(), out var cena) || cena <= 0)
             {
                 Console.WriteLine("Neispravna cena.");
-                return;
+                return false;
             }
 
             Console.WriteLine("Tip prodaje: 1-RestoranskaProdaja, 2-DiskontPica");
@@ -54,16 +50,18 @@ namespace Presentation.Meni
             try
             {
                 var faktura = _prodaja.KreirajFakturu(vinoId, kolicina, tip, nacin, cena);
-                Console.WriteLine($" Faktura kreirana: {faktura.Id}");
+                Console.WriteLine($"Faktura kreirana: {faktura.Id}");
                 Console.WriteLine($"Ukupan iznos: {faktura.UkupanIznos}");
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" {ex.Message}");
+                Console.WriteLine(ex.Message);
+                return false;
             }
         }
 
-        public void PregledSvihFaktura()
+        public bool PregledSvihFaktura()
         {
             var fakture = _prodaja.VratiSveFakture();
 
@@ -71,22 +69,19 @@ namespace Presentation.Meni
             if (!fakture.Any())
             {
                 Console.WriteLine("Nema faktura.");
-                return;
+                return false;
             }
 
             foreach (var f in fakture)
             {
-                Console.WriteLine($"\nFaktura: {f.Id} | {f.Datum}");
+                Console.WriteLine($"Faktura: {f.Id} | {f.Datum:dd.MM.yyyy HH:mm}");
                 Console.WriteLine($"Tip: {f.TipProdaje} | Plaćanje: {f.NacinPlacanja}");
                 foreach (var s in f.Stavke)
                     Console.WriteLine($"- {s.NazivVina} x{s.Kolicina} = {s.UkupnaCena}");
                 Console.WriteLine($"UKUPNO: {f.UkupanIznos}");
             }
+
+            return true;
         }
     }
 }
-
-
-
-
-    

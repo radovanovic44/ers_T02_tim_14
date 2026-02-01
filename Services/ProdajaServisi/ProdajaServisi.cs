@@ -3,52 +3,48 @@ using Domain.Modeli;
 using Domain.PomocneMetode;
 using Domain.Repozitorijumi;
 using Domain.Servisi;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Services.ProdajaServisi
 {
     public class ProdajaServisi : IProdajaServis
     {
         private readonly IVinoRepozitorijum _vinoRepo;
-        private readonly ISkladistenjeServis _skladisteServis;
-        private readonly IFakturaRepozitorijum _fakturaRepo;
+        private readonly ISkladistenjeServis _skladiste;
+        private readonly IFakturaRepozitorijum _fakture;
         private readonly ILoggerServis _logger;
+
+        // koliko boca pretpostavljamo da ima u jednoj paleti
+        private const int PROCENA_FLASA_PO_PALETI = 24;
 
         public ProdajaServisi(
             IVinoRepozitorijum vinoRepo,
-            ISkladistenjeServis skladisteServis,
-            IFakturaRepozitorijum fakturaRepo,
-            ILoggerServis logger
-        )
+            ISkladistenjeServis skladiste,
+            IFakturaRepozitorijum fakture,
+            ILoggerServis logger)
         {
             _vinoRepo = vinoRepo;
-            _skladisteServis = skladisteServis;
-            _fakturaRepo = fakturaRepo;
+            _skladiste = skladiste;
+            _fakture = fakture;
             _logger = logger;
         }
 
         public IEnumerable<KatalogVinaStavka> VratiKatalogVina()
         {
             var katalog = _vinoRepo.VratiSve()
-                .Where(v => _skladisteServis.ImaNaStanju(v.Id))
+                .Where(v => _skladiste.ImaNaStanju(v.Id))
                 .Select(v => new KatalogVinaStavka
                 {
                     VinoId = v.Id,
                     Naziv = v.Naziv,
                     Kategorija = v.Kategorija,
-                    Zapremina = v.Zapremina
+                    Zapremina = v.Zapremina,
+                    BrojFlasa = v.KolicinaFlasa
                 })
                 .OrderBy(x => x.Kategorija)
                 .ThenBy(x => x.Naziv)
                 .ToList();
 
-            _logger?.EvidentirajDogadjaj(
-                TipEvidencije.INFO,
-                "Prikazan katalog vina."
-            );
-
+            _logger.EvidentirajDogadjaj(TipEvidencije.INFO, "Prikazan katalog vina.");
             return katalog;
         }
 
@@ -57,45 +53,21 @@ namespace Services.ProdajaServisi
             int kolicina,
             TipProdaje tipProdaje,
             NacinPlacanja nacinPlacanja,
-            decimal cenaPoFlasi
-        )
+            decimal cenaPoFlasi)
         {
-            if (kolicina <= 0)
-                throw new ArgumentException("Količina mora biti > 0.");
+            if (kolicina <= 0) throw new ArgumentException("Količina mora biti > 0.");
 
             var vino = _vinoRepo.PronadjiPoId(vinoId);
-            if (vino == null)
-                throw new Exception("Vino ne postoji.");
+            if (vino == null) throw new Exception("Vino ne postoji.");
 
-            var palete = _skladisteServis.IsporuciPalete(1);
+            // trazimo palete iz skladista (spec: skladiste vraca palete)
+            int trazenePalete = (int)Math.Ceiling((double)kolicina / PROCENA_FLASA_PO_PALETI);
+            var palete = _skladiste.IsporuciPalete(trazenePalete);
 
-            var sviIds = palete.Select(p => p.VinoId).ToList();
-            var trazeni = sviIds.Where(id => id == vinoId).Take(kolicina) .ToList();
-
-            if (trazeni.Count < kolicina)
-            {
-                foreach (var p in palete)
-                    _skladisteServis.PrimiPaletu(p);
-
-                throw new Exception("Nema dovoljno vina na stanju.");
-            }
-
-            int preostaloZaUkloniti = kolicina;
-
-            foreach (var p in palete)
-            {
-                if (preostaloZaUkloniti == 0)
-                    break;
-                if (p.VinoId == vinoId)
-                {
-                    preostaloZaUkloniti--;
-                    
-                }
-                else
-                {
-                    _skladisteServis.PrimiPaletu(p);
-                }
-            }
+            // broj dostupnih boca tog vina u isporucenim paletama
+            int dostupno = palete.Count(p => p.Vino.Id == vinoId) * 24;
+            if (dostupno < kolicina)
+                throw new Exception($"Nema dovoljno vina na stanju. Trazeno: {kolicina}, dostupno: {dostupno}.");
 
             var faktura = new Faktura
             {
@@ -115,19 +87,18 @@ namespace Services.ProdajaServisi
                 }
             };
 
-            _fakturaRepo.Dodaj(faktura);
+            _fakture.Dodaj(faktura);
 
             _logger.EvidentirajDogadjaj(
                 TipEvidencije.INFO,
-                $"Kreirana faktura {faktura.Id} za vino {vino.Naziv}, količina {kolicina}."
-            );
+                $"Kreirana faktura {faktura.Id} za vino {vino.Naziv}, kolicina {kolicina}.");
 
             return faktura;
         }
 
         public List<Faktura> VratiSveFakture()
         {
-            return _fakturaRepo.VratiSve().OrderByDescending(f => f.Datum).ToList();
+            return _fakture.VratiSve().OrderByDescending(f => f.Datum).ToList();
         }
     }
 }

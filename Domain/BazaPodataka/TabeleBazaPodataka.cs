@@ -6,7 +6,7 @@ namespace Domain.BazaPodataka
     {
         public List<Korisnik> Korisnici { get; set; } = [];
         public List<VinovaLoza> Loze { get; set; }
-        public List<Vino> Vina { get; set; }    
+        public List<Vino> Vina { get; set; }
         public List<Paleta> Palete { get; set; }
         public List<VinskiPodrum> VinskiPodrum { get; set; }
         public List<Faktura> Fakture { get; set; }
