@@ -111,6 +111,7 @@ namespace Services.PakovanjeServisi
                 if (paleta == null)
                 {
                     _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, "Nema dostupne upakovane palete za slanje.");
+                    Console.WriteLine("Nema dostupnih paleta za slanje.");
                     return false;
                 }
 
@@ -118,6 +119,7 @@ namespace Services.PakovanjeServisi
 
                 var ok = _skladistenje.PrimiPaletu(paleta);
                 _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Paleta '{paleta.Sifra}' poslata u skladiste.");
+                Console.WriteLine("Prva upakovana paleta u redu poslata u skladiste.");
                 return ok;
             }
             catch (Exception ex)

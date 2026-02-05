@@ -33,12 +33,19 @@ namespace Services.ProizvodnjaServisi
 
             Vino vino = _vinoRepo.PronadjiPoId(id);
 
+            if (vino == null)
+                throw new KeyNotFoundException("Vino nije pronadjeno.");
+
             if (vino.KolicinaFlasa < kolicina)
             {
+                throw new InvalidOperationException("Nema dovoljno vina na stanju.");
                 _logger.EvidentirajDogadjaj(
                     TipEvidencije.WARNING,
                     $"Trazeno {kolicina} vina ({vino.Kategorija}), dostupno {vino.KolicinaFlasa}.");
             }
+
+            if (vino == null || vino.KolicinaFlasa < kolicina)
+                return null;
 
             return vino;
         }
