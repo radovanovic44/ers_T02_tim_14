@@ -13,7 +13,7 @@ namespace Services.PakovanjeServisi
         private readonly ILoggerServis _logger;
         private readonly IVinoRepozitorijum _vinoRepo;
 
-        // Koliko boca staje u jednu paletu (nije zadato u specifikaciji, pa biramo razumnu granicu)
+        
         private const int MAX_FLASA_PO_PALETI = 24;
 
         public PakovanjeServis(
@@ -46,7 +46,7 @@ namespace Services.PakovanjeServisi
                     brojFlasa = MAX_FLASA_PO_PALETI;
                 }
 
-                // prvo probamo da uzmemo proizvedena vina
+                
                 var vino = _proizvodnjaVina.ZahtevZaVino(
                      _vinoRepo.VratiSve()
                     .Where(v => v.Kategorija == kategorija)
@@ -55,7 +55,7 @@ namespace Services.PakovanjeServisi
                     .FirstOrDefault(),
                     brojFlasa);
                 var paleta = new Paleta();
-                // ako nema dovoljno, pokreni fermentaciju na zahtev
+               
                 if (vino.KolicinaFlasa < brojFlasa)
                 {
                     var okFer = _proizvodnjaVina.ZapocniFermentaciju(kategorija, brojFlasa - vino.KolicinaFlasa, zapreminaFlase);

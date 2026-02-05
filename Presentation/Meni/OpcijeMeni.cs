@@ -12,7 +12,7 @@ namespace Presentation.Meni
         private readonly KatalogVinaMeni _katalogMeni;
         private readonly FaktureMeni _faktureMeni;
 
-        // Pretpostavimo jedan (glavni) vinski podrum za demo
+       
         private readonly Guid _vinskiPodrumId;
 
         public OpcijeMeni(

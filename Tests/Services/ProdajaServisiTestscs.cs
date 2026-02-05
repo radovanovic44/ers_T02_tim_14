@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using NUnit.Framework;
 using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
@@ -30,8 +33,8 @@ namespace Tests.Services
             => _palete.Any(p => p.Status == StatusPalete.Otpremljena && p.Vino.Id == vinoId);
     }
 
-   // [TestFixture]
-   /* public class ProdajaServisiTests
+    [TestFixture]
+    public class ProdajaServisiTests
     {
         [Test]
         public void KreirajFakturu_VracaFakturu_KadImaStanja()
@@ -42,9 +45,18 @@ namespace Tests.Services
             var logger = new Evidencija("testlog.txt");
 
             var vinoId = Guid.NewGuid();
-            vinoRepo.Dodaj(new Vino(vinoId, "TestVino", KategorijaVina.Stolno, 0.75, "S1", Guid.NewGuid(), DateTime.Now));
+            vinoRepo.Dodaj(new Vino(
+                vinoId,
+                "TestVino",
+                KategorijaVina.Stolno,
+                0.75,
+                "S1",
+                new List<VinovaLoza>(),
+                DateTime.Now,
+                24));
 
-            var paleta = new Paleta("P1", "BG", Guid.NewGuid(), new[] { vinoId, vinoId, vinoId }, StatusPalete.Otpremljena);
+            // jedna paleta pokriva 24 flaše (PROCENA_FLASA_PO_PALETI u ProdajaServisi)
+            var paleta = new Paleta("P1", "BG", Guid.NewGuid(), vinoRepo.PronadjiPoId(vinoId)!, StatusPalete.Otpremljena);
             var skladiste = new FakeSkladiste(new[] { paleta });
 
             var prodaja = new ProdajaServisi(vinoRepo, skladiste, faktureRepo, logger);
@@ -53,6 +65,9 @@ namespace Tests.Services
 
             Assert.That(f, Is.Not.Null);
             Assert.That(f.UkupanIznos, Is.EqualTo(200));
+            Assert.That(f.Stavke, Has.Count.EqualTo(1));
+            Assert.That(f.Stavke[0].VinoId, Is.EqualTo(vinoId));
+            Assert.That(f.Stavke[0].Kolicina, Is.EqualTo(2));
         }
-    }*/
+    }
 }

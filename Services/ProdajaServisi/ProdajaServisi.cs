@@ -13,7 +13,7 @@ namespace Services.ProdajaServisi
         private readonly IFakturaRepozitorijum _fakture;
         private readonly ILoggerServis _logger;
 
-        // koliko boca pretpostavljamo da ima u jednoj paleti
+       
         private const int PROCENA_FLASA_PO_PALETI = 24;
 
         public ProdajaServisi(
@@ -60,11 +60,11 @@ namespace Services.ProdajaServisi
             var vino = _vinoRepo.PronadjiPoId(vinoId);
             if (vino == null) throw new Exception("Vino ne postoji.");
 
-            // trazimo palete iz skladista (spec: skladiste vraca palete)
+           
             int trazenePalete = (int)Math.Ceiling((double)kolicina / PROCENA_FLASA_PO_PALETI);
             var palete = _skladiste.IsporuciPalete(trazenePalete);
 
-            // broj dostupnih boca tog vina u isporucenim paletama
+            
             int dostupno = palete.Count(p => p.Vino.Id == vinoId) * 24;
             if (dostupno < kolicina)
                 throw new Exception($"Nema dovoljno vina na stanju. Trazeno: {kolicina}, dostupno: {dostupno}.");

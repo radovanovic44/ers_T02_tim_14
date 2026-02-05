@@ -19,10 +19,10 @@ namespace ERS_PROJEKAT
 {
     public class Program
     {
-        // Main mora ostati void (entry point)
+        
         public static void Main()
         {
-            // Baza podataka (XML) + inicijalni podaci su u konstruktoru ako fajl ne postoji
+            // Baza podataka (XML)
             IBazaPodataka baza = new XMLBazaPodataka();
 
             // Repozitorijumi
@@ -48,7 +48,7 @@ namespace ERS_PROJEKAT
                 Console.WriteLine("Pogrešno korisničko ime ili lozinka. Pokušajte ponovo.");
             }
 
-            // biramo implementaciju skladistenja po ulozi
+            
             ISkladistenjeServis skladiste = new VinskiPodrumServis(paleteRepo, logger, baza.Tabele);
                 
 

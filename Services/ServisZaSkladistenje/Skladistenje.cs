@@ -6,7 +6,7 @@ using Domain.Servisi;
 
 namespace Services.SkladistenjeServisi
 {
-    // Implementacija skladistenja za ulogu GLAVNI_ENOLOG (do 5 paleta, 0.3s po paleti)
+    
     public class VinskiPodrumServis : ISkladistenjeServis
     {
         private readonly IPaleteRepozitorijum _paleteRepo;

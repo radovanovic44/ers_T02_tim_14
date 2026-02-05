@@ -51,7 +51,7 @@ namespace Services.ProizvodnjaServisi
                 if (zapreminaFlase != 0.75 && zapreminaFlase != 1.5)
                     throw new ArgumentException("Zapremina flase mora biti 0.75 L ili 1.5 L.");
 
-                // Jedna obrana loza daje 1.2 L vina
+               
                 double ukupnoLitara = brojFlasa * zapreminaFlase;
                 int potrebnoLoza = (int)Math.Ceiling(ukupnoLitara / 1.2);
 
@@ -63,7 +63,7 @@ namespace Services.ProizvodnjaServisi
                     .Where(l => l.Faza == FazaZrelosti.Obrana)
                     .ToList();
 
-                // automatska sadnja ako nema dovoljno obranih loza
+                
                 while (obrane.Count < potrebnoLoza)
                 {
                     var nova = _vinogradarstvo.PosadiNovuLozu("AutomatskaLoza", DateTime.Now.Year, "Toskana");
@@ -76,7 +76,7 @@ namespace Services.ProizvodnjaServisi
                         "Nema dovoljan broj loza, automatski posadjena nova loza za fermentaciju.");
                 }
 
-                // balansiranje secera (optimum 24.00 Brix)
+              
                 foreach (var loza in obrane.Take(potrebnoLoza))
                 {
                     if (loza.NivoSecera > 24.0)
