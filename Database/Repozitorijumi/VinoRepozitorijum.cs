@@ -27,6 +27,34 @@ namespace Database.Repozitorijumi
             }
         }
 
+        public bool Obrisi(Guid id)
+        {
+            try
+            {
+                var vino = _baza.Tabele.Vina.FirstOrDefault(v => v.Id == id);
+                if (vino == null) return false;
+
+                _baza.Tabele.Vina.Remove(vino);
+                return _baza.SacuvajPromene();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool SacuvajIzmene()
+        {
+            try
+            {
+                return _baza.SacuvajPromene();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public Vino? PronadjiPoId(Guid id)
         {
             return _baza.Tabele.Vina.FirstOrDefault(v => v.Id == id);
@@ -42,6 +70,6 @@ namespace Database.Repozitorijumi
             return _baza.Tabele.Vina.Where(v => v.Kategorija == kategorija);
         }
 
-        
+
     }
 }

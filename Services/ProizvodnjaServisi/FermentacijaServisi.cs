@@ -28,27 +28,43 @@ namespace Services.ProizvodnjaServisi
 
         public Vino ZahtevZaVino(Guid id, int kolicina)
         {
+            if (kolicina <= 0)
+                throw new ArgumentException("Kolicina mora biti veca od nule.");
 
-            if (kolicina <= 0) throw new ArgumentException("Kolicina mora biti veca od nule.");
+            var vinoUBazi = _vinoRepo.PronadjiPoId(id);
 
-            Vino vino = _vinoRepo.PronadjiPoId(id);
-
-            if (vino == null)
+            if (vinoUBazi == null)
                 throw new KeyNotFoundException("Vino nije pronadjeno.");
 
-            if (vino.KolicinaFlasa < kolicina)
+            if (vinoUBazi.KolicinaFlasa < kolicina)
             {
-                throw new InvalidOperationException("Nema dovoljno vina na stanju.");
                 _logger.EvidentirajDogadjaj(
                     TipEvidencije.WARNING,
-                    $"Trazeno {kolicina} vina ({vino.Kategorija}), dostupno {vino.KolicinaFlasa}.");
+                    $"Trazeno {kolicina} vina ({vinoUBazi.Kategorija}) dostupno {vinoUBazi.KolicinaFlasa}."
+                );
+
+                throw new InvalidOperationException("Nema dovoljno vina na stanju.");
             }
 
-            if (vino == null || vino.KolicinaFlasa < kolicina)
-                return null;
+            // skini sa stanja
+            vinoUBazi.KolicinaFlasa -= kolicina;
+            _vinoRepo.SacuvajIzmene();
 
-            return vino;
+            // vrati izdvojenu kolicinu kao novi objekat
+            return new Vino(
+                vinoUBazi.Id,
+                vinoUBazi.Naziv,
+                vinoUBazi.Kategorija,
+                vinoUBazi.Zapremina,
+                vinoUBazi.SifraSerije,
+                vinoUBazi.loze,
+                vinoUBazi.DatumFlasiranja,
+                kolicina
+            );
         }
+
+
+
 
         public bool ZapocniFermentaciju(KategorijaVina kategorijaVina, int brojFlasa, double zapreminaFlase)
         {
@@ -58,7 +74,7 @@ namespace Services.ProizvodnjaServisi
                 if (zapreminaFlase != 0.75 && zapreminaFlase != 1.5)
                     throw new ArgumentException("Zapremina flase mora biti 0.75 L ili 1.5 L.");
 
-               
+
                 double ukupnoLitara = brojFlasa * zapreminaFlase;
                 int potrebnoLoza = (int)Math.Ceiling(ukupnoLitara / 1.2);
 
@@ -70,7 +86,7 @@ namespace Services.ProizvodnjaServisi
                     .Where(l => l.Faza == FazaZrelosti.Obrana)
                     .ToList();
 
-                
+
                 while (obrane.Count < potrebnoLoza)
                 {
                     var nova = _vinogradarstvo.PosadiNovuLozu("AutomatskaLoza", DateTime.Now.Year, "Toskana");
@@ -83,7 +99,7 @@ namespace Services.ProizvodnjaServisi
                         "Nema dovoljan broj loza, automatski posadjena nova loza za fermentaciju.");
                 }
 
-              
+
                 foreach (var loza in obrane.Take(potrebnoLoza))
                 {
                     if (loza.NivoSecera > 24.0)

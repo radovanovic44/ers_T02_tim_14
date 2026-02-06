@@ -1,4 +1,5 @@
-﻿using Domain.Modeli;
+﻿using System;
+using Domain.Modeli;
 
 namespace Domain.Servisi
 {
@@ -7,7 +8,9 @@ namespace Domain.Servisi
         bool PrimiPaletu(Paleta paleta);
         List<Paleta> IsporuciPalete(int brojPaleta);
 
-      
+        List<Paleta> IsporuciPaleteZaVino(Guid vinoId, int brojPaleta);
+        int DostupnoFlasa(Guid vinoId);
+
         bool ImaNaStanju(Guid vinoId);
     }
 }

@@ -13,7 +13,6 @@ namespace Services.PakovanjeServisi
         private readonly ILoggerServis _logger;
         private readonly IVinoRepozitorijum _vinoRepo;
 
-        
         private const int MAX_FLASA_PO_PALETI = 24;
 
         public PakovanjeServis(
@@ -30,7 +29,22 @@ namespace Services.PakovanjeServisi
             _logger = logger;
         }
 
-        public (bool, Paleta) UpakujVina(Guid vinskiPodrumId, KategorijaVina kategorija, int brojFlasa, double zapreminaFlase)
+        public IEnumerable<Vino> VratiVinaZaPakovanje(KategorijaVina kategorija)
+        {
+            try
+            {
+                return _vinoRepo.VratiSve()
+                    .Where(v => v.Kategorija == kategorija)
+                    .Where(v => v.KolicinaFlasa > 0)
+                    .ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        public (bool, Paleta) UpakujVina(Guid vinskiPodrumId, Guid vinoId, int brojFlasa, double zapreminaFlase)
         {
             try
             {
@@ -46,51 +60,53 @@ namespace Services.PakovanjeServisi
                     brojFlasa = MAX_FLASA_PO_PALETI;
                 }
 
-                
-                var vino = _proizvodnjaVina.ZahtevZaVino(
-                     _vinoRepo.VratiSve()
-                    .Where(v => v.Kategorija == kategorija)
-                    .Where(v => !_paleteRepo.SvePalete().Any(p => p.Vino != null && p.Vino.Id == v.Id))
-                    .Select(v => v.Id)
-                    .FirstOrDefault(),
-                    brojFlasa);
-                var paleta = new Paleta();
-               
-                if (vino.KolicinaFlasa < brojFlasa)
+                var izabrano = _vinoRepo.PronadjiPoId(vinoId);
+                if (izabrano == null)
                 {
-                    var okFer = _proizvodnjaVina.ZapocniFermentaciju(kategorija, brojFlasa - vino.KolicinaFlasa, zapreminaFlase);
-                    if (!okFer)
-                        return (false, new Paleta());
-
-                    var dopuna = _proizvodnjaVina.ZahtevZaVino(
-                     _vinoRepo.VratiSve()
-                    .Where(v => v.Kategorija == kategorija)
-                    .Where(v => !_paleteRepo.SvePalete().Any(p => p.Vino != null && p.Vino.Id == v.Id))
-                    .Select(v => v.Id)
-                    .FirstOrDefault(),
-                    brojFlasa);
-
-                    paleta.Sifra = $"PL-{DateTime.Now:yyyy}-{paleta.Id}";
-                    paleta.AdresaOdredista = string.Empty;
-                    paleta.VinskiPodrumId = vinskiPodrumId;
-                    paleta.Vino = dopuna;
-                    paleta.Status = StatusPalete.Upakovana;
-
+                    Console.WriteLine("Izabrano vino ne postoji.");
+                    return (false, new Paleta());
                 }
-                else
+
+                Vino vino;
+                try
                 {
-                    paleta.Sifra = $"PL-{DateTime.Now:yyyy}-{paleta.Id}";
-                    paleta.AdresaOdredista = string.Empty;
-                    paleta.VinskiPodrumId = vinskiPodrumId;
-                    paleta.Vino = vino;
-                    paleta.Status = StatusPalete.Upakovana;
+                    vino = _proizvodnjaVina.ZahtevZaVino(vinoId, brojFlasa);
                 }
+                catch
+                {
+                    // Ako nema dovoljno na stanju, pokusaj automatski da dopunis fermentacijom
+                    var manjka = Math.Max(0, brojFlasa - izabrano.KolicinaFlasa);
+                    if (manjka > 0)
+                    {
+                        var okFer = _proizvodnjaVina.ZapocniFermentaciju(izabrano.Kategorija, manjka, zapreminaFlase);
+                        if (!okFer)
+                            return (false, new Paleta());
+                    }
+
+                    // Nakon fermentacije, uzmi bilo koje vino iste kategorije koje moze da pokrije kolicinu (najbolje dostupno)
+                    var kandidatId = _vinoRepo.VratiSve()
+                        .Where(v => v.Kategorija == izabrano.Kategorija)
+                        .OrderByDescending(v => v.KolicinaFlasa)
+                        .Select(v => v.Id)
+                        .FirstOrDefault();
+
+                    vino = _proizvodnjaVina.ZahtevZaVino(kandidatId, brojFlasa);
+                }
+
+                var paleta = new Paleta
+                {
+                    Sifra = $"PL-{DateTime.Now:yyyy}-{Guid.NewGuid()}",
+                    AdresaOdredista = string.Empty,
+                    VinskiPodrumId = vinskiPodrumId,
+                    Vino = vino,
+                    Status = StatusPalete.Upakovana
+                };
 
                 _paleteRepo.DodajPaletu(paleta);
 
                 _logger.EvidentirajDogadjaj(
                     TipEvidencije.INFO,
-                    $"Upakovana paleta {paleta.Sifra} ({paleta.Vino.KolicinaFlasa} flasa) - kategorija {kategorija}.");
+                    $"Upakovana paleta {paleta.Sifra} ({paleta.Vino.KolicinaFlasa} flasa) - kategorija {paleta.Vino.Kategorija}.");
 
                 return (true, paleta);
             }
@@ -101,17 +117,43 @@ namespace Services.PakovanjeServisi
             }
         }
 
-        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId)
+     
+        public (bool, Paleta) UpakujVina(Guid vinskiPodrumId, KategorijaVina kategorija, int brojFlasa, double zapreminaFlase)
+        {
+            var vinoId = _vinoRepo.VratiSve()
+                .Where(v => v.Kategorija == kategorija)
+                .OrderByDescending(v => v.KolicinaFlasa)
+                .Select(v => v.Id)
+                .FirstOrDefault();
+
+            return UpakujVina(vinskiPodrumId, vinoId, brojFlasa, zapreminaFlase);
+        }
+
+        public IEnumerable<Paleta> VratiUpakovanePalete(Guid vinskiPodrumId)
+        {
+            try
+            {
+                return _paleteRepo.SvePalete()
+                    .Where(p => p.VinskiPodrumId == vinskiPodrumId && p.Status == StatusPalete.Upakovana)
+                    .ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId, Guid paletaId)
         {
             try
             {
                 var paleta = _paleteRepo.SvePalete()
-                    .FirstOrDefault(p => p.VinskiPodrumId == vinskiPodrumId && p.Status == StatusPalete.Upakovana);
+                    .FirstOrDefault(p => p.VinskiPodrumId == vinskiPodrumId && p.Id == paletaId && p.Status == StatusPalete.Upakovana);
 
                 if (paleta == null)
                 {
-                    _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, "Nema dostupne upakovane palete za slanje.");
-                    Console.WriteLine("Nema dostupnih paleta za slanje.");
+                    _logger.EvidentirajDogadjaj(TipEvidencije.WARNING, "Nema izabrane/upakovane palete za slanje.");
+                    Console.WriteLine("Nema dostupne upakovane palete za slanje.");
                     return false;
                 }
 
@@ -119,7 +161,7 @@ namespace Services.PakovanjeServisi
 
                 var ok = _skladistenje.PrimiPaletu(paleta);
                 _logger.EvidentirajDogadjaj(TipEvidencije.INFO, $"Paleta '{paleta.Sifra}' poslata u skladiste.");
-                Console.WriteLine("Prva upakovana paleta u redu poslata u skladiste.");
+                Console.WriteLine($"Paleta '{paleta.Sifra}' poslata u skladiste.");
                 return ok;
             }
             catch (Exception ex)
@@ -127,6 +169,14 @@ namespace Services.PakovanjeServisi
                 _logger.EvidentirajDogadjaj(TipEvidencije.ERROR, $"Greska slanja palete: {ex.Message}");
                 return false;
             }
+        }
+
+        
+        public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId)
+        {
+            var prva = VratiUpakovanePalete(vinskiPodrumId).FirstOrDefault();
+            if (prva == null) return false;
+            return PosaljiPaletuUSkladiste(vinskiPodrumId, prva.Id);
         }
     }
 }

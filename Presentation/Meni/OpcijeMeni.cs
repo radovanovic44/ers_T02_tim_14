@@ -1,6 +1,7 @@
 ﻿using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.Servisi;
+using System.Linq;
 
 namespace Presentation.Meni
 {
@@ -11,9 +12,6 @@ namespace Presentation.Meni
         private readonly IPakovanjeServis _pakovanje;
         private readonly KatalogVinaMeni _katalogMeni;
         private readonly FaktureMeni _faktureMeni;
-
-
-       
         private readonly Guid _vinskiPodrumId;
 
         public OpcijeMeni(
@@ -37,7 +35,6 @@ namespace Presentation.Meni
             while (true)
             {
                 Console.Clear();
-                
 
                 if (_korisnik.Uloga == TipKorisnika.GLAVNI_ENOLOG)
                 {
@@ -47,8 +44,8 @@ namespace Presentation.Meni
                     Console.WriteLine($"Prijavljeni korisnik: {_korisnik.ImePrezime} ({_korisnik.Uloga})");
                     Console.WriteLine();
                     Console.WriteLine("1. Pokreni fermentaciju");
-                    Console.WriteLine("2. Upakuj vina u paletu");
-                    Console.WriteLine("3. Posalji paletu u skladiste");
+                    Console.WriteLine("2. Upakuj vina u paletu (izbor serije)");
+                    Console.WriteLine("3. Posalji paletu u skladiste (izbor palete)");
                     Console.WriteLine("4. Pregled svih faktura");
                     Console.WriteLine("5. Katalog vina");
                 }
@@ -65,16 +62,18 @@ namespace Presentation.Meni
                 }
 
                 Console.WriteLine("0. Logout");
+
                 Console.Write("Izbor: ");
                 var izbor = Console.ReadLine() ?? "";
 
-                if (izbor == "0") {
-                    Console.WriteLine("Korisnik uspesno izlogovan,unesite enter za ponovno logovanje");
+                if (izbor == "0")
+                {
+                    Console.WriteLine("Korisnik uspesno izlogovan, unesite enter za ponovno logovanje");
                     Console.ReadLine();
-                    Console.BackgroundColor= ConsoleColor.Black;
+                    Console.BackgroundColor = ConsoleColor.Black;
                     Console.Clear();
                     return false;
-                        }
+                }
 
                 if (_korisnik.Uloga == TipKorisnika.GLAVNI_ENOLOG)
                 {
@@ -87,8 +86,7 @@ namespace Presentation.Meni
                             Upakuj();
                             break;
                         case "3":
-                            _pakovanje.PosaljiPaletuUSkladiste(_vinskiPodrumId);
-                            Pause();
+                            PosaljiPaletu();
                             break;
                         case "4":
                             _faktureMeni.PregledSvihFaktura();
@@ -165,7 +163,32 @@ namespace Presentation.Meni
                 _ => KategorijaVina.Stolno
             };
 
-            Console.Write("Broj flasa za pakovanje: ");
+            var vina = _pakovanje.VratiVinaZaPakovanje(kategorija).ToList();
+            if (vina.Count == 0)
+            {
+                Console.WriteLine("Nema dostupnih serija vina za pakovanje u ovoj kategoriji.");
+                Pause();
+                return false;
+            }
+
+            Console.WriteLine("\nDostupne serije vina:");
+            for (int i = 0; i < vina.Count; i++)
+            {
+                var v = vina[i];
+                Console.WriteLine($"{i + 1}. {v.Naziv} | Serija: {v.SifraSerije} | {v.Zapremina}L | Kolicina: {v.KolicinaFlasa}");
+            }
+
+            Console.Write("Izaberite seriju (broj): ");
+            if (!int.TryParse(Console.ReadLine(), out var izbor) || izbor < 1 || izbor > vina.Count)
+            {
+                Console.WriteLine("Neispravan izbor.");
+                Pause();
+                return false;
+            }
+
+            var izabranoVino = vina[izbor - 1];
+
+            Console.Write("Broj flasa za pakovanje (max 24): ");
             if (!int.TryParse(Console.ReadLine(), out var broj) || broj <= 0)
             {
                 Console.WriteLine("Neispravan broj flasa.");
@@ -181,8 +204,41 @@ namespace Presentation.Meni
                 return false;
             }
 
-            var (ok, paleta) = _pakovanje.UpakujVina(_vinskiPodrumId, kategorija, broj, zap);
-            Console.WriteLine(ok ? $"Upakovana paleta: {paleta.Sifra} ({paleta.Vino.KolicinaFlasa} flasa)" : "Pakovanje nije uspelo.");
+            var (ok, paleta) = _pakovanje.UpakujVina(_vinskiPodrumId, izabranoVino.Id, broj, zap);
+            Console.WriteLine(ok
+                ? $"Upakovana paleta: {paleta.Sifra} | Serija: {paleta.Vino.SifraSerije} | {paleta.Vino.KolicinaFlasa} flasa"
+                : "Pakovanje nije uspelo.");
+            Pause();
+            return ok;
+        }
+
+        private bool PosaljiPaletu()
+        {
+            var palete = _pakovanje.VratiUpakovanePalete(_vinskiPodrumId).ToList();
+            if (palete.Count == 0)
+            {
+                Console.WriteLine("Nema upakovanih paleta za slanje.");
+                Pause();
+                return false;
+            }
+
+            Console.WriteLine("\nUpakovane palete spremne za slanje:");
+            for (int i = 0; i < palete.Count; i++)
+            {
+                var p = palete[i];
+                Console.WriteLine($"{i + 1}. {p.Sifra} | Serija: {p.Vino.SifraSerije} | {p.Vino.Kategorija} | {p.Vino.KolicinaFlasa} flasa");
+            }
+
+            Console.Write("Izaberite paletu (broj): ");
+            if (!int.TryParse(Console.ReadLine(), out var izbor) || izbor < 1 || izbor > palete.Count)
+            {
+                Console.WriteLine("Neispravan izbor.");
+                Pause();
+                return false;
+            }
+
+            var izabrana = palete[izbor - 1];
+            var ok = _pakovanje.PosaljiPaletuUSkladiste(_vinskiPodrumId, izabrana.Id);
             Pause();
             return ok;
         }

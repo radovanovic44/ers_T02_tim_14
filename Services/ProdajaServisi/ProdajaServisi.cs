@@ -1,4 +1,7 @@
-﻿using Domain.Enumeracije;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Domain.Enumeracije;
 using Domain.Modeli;
 using Domain.PomocneMetode;
 using Domain.Repozitorijumi;
@@ -13,7 +16,7 @@ namespace Services.ProdajaServisi
         private readonly IFakturaRepozitorijum _fakture;
         private readonly ILoggerServis _logger;
 
-       
+
         private const int PROCENA_FLASA_PO_PALETI = 24;
 
         public ProdajaServisi(
@@ -38,7 +41,7 @@ namespace Services.ProdajaServisi
                     Naziv = v.Naziv,
                     Kategorija = v.Kategorija,
                     Zapremina = v.Zapremina,
-                    BrojFlasa = v.KolicinaFlasa
+                    BrojFlasa = _skladiste.DostupnoFlasa(v.Id)
                 })
                 .OrderBy(x => x.Kategorija)
                 .ThenBy(x => x.Naziv)
@@ -60,12 +63,12 @@ namespace Services.ProdajaServisi
             var vino = _vinoRepo.PronadjiPoId(vinoId);
             if (vino == null) throw new Exception("Vino ne postoji.");
 
-           
-            int trazenePalete = (int)Math.Ceiling((double)kolicina / PROCENA_FLASA_PO_PALETI);
-            var palete = _skladiste.IsporuciPalete(trazenePalete);
 
-            
-            int dostupno = palete.Count(p => p.Vino.Id == vinoId) * 24;
+            int trazenePalete = (int)Math.Ceiling((double)kolicina / PROCENA_FLASA_PO_PALETI);
+            var palete = _skladiste.IsporuciPaleteZaVino(vinoId, trazenePalete);
+
+
+            int dostupno = _skladiste.DostupnoFlasa(vinoId);
             if (dostupno < kolicina)
                 throw new Exception($"Nema dovoljno vina na stanju. Trazeno: {kolicina}, dostupno: {dostupno}.");
 
@@ -88,6 +91,9 @@ namespace Services.ProdajaServisi
             };
 
             _fakture.Dodaj(faktura);
+
+
+            _vinoRepo.Obrisi(vinoId);
 
             _logger.EvidentirajDogadjaj(
                 TipEvidencije.INFO,

@@ -50,28 +50,20 @@ namespace ERS_PROJEKAT
 
             var podrumId = baza.Tabele.VinskiPodrum.FirstOrDefault()?.Id ?? Guid.NewGuid();
 
-         
+
             var am = new AutentifikacioniMeni(auth);
 
-         
             while (true)
             {
                 Korisnik prijavljen;
 
-                while (!am.TryLogin(out prijavljen))
-                {
-                    
-                    Console.WriteLine("Pogrešno korisničko ime ili lozinka. Pokušajte ponovo.");
-                    Console.WriteLine("Sada cete biti prebaceni na sledecu stranicu");
-                    Console.Write("==================================================");
-                    Thread.Sleep(2500);
-                    Console.Clear();
-                }
+                // Autentifikacija (login/registracija). Ako korisnik izabere izlaz -> izlaz iz aplikacije.
+                var ulogovan = am.Authenticate(out prijavljen);
+                if (!ulogovan)
+                    return;
 
                 var opcije = new OpcijeMeni(prijavljen, proizvodnja, pakovanje, katalogMeni, faktureMeni, podrumId);
                 opcije.PrikaziMeni();
-
-                
             }
         }
     }
