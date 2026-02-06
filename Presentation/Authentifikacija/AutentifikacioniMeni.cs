@@ -17,7 +17,8 @@ namespace Presentation.Authentifikacija
             korisnik = new Korisnik();
             bool uspesnaPrijava = false;
             string? korisnickoIme = "", lozinka = "";
-
+            
+            Console.WriteLine("====================LOGIN MENI====================");
             Console.Write("Korisničko ime: ");
             korisnickoIme = Console.ReadLine() ?? "";
 
@@ -25,6 +26,7 @@ namespace Presentation.Authentifikacija
             lozinka = Console.ReadLine() ?? "";
 
             (uspesnaPrijava, korisnik) = autentifikacijaServis.Prijava(korisnickoIme.Trim(), lozinka.Trim());
+            
 
             return uspesnaPrijava;
         }

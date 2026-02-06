@@ -12,6 +12,7 @@ namespace Presentation.Meni
         private readonly KatalogVinaMeni _katalogMeni;
         private readonly FaktureMeni _faktureMeni;
 
+
        
         private readonly Guid _vinskiPodrumId;
 
@@ -36,12 +37,15 @@ namespace Presentation.Meni
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine("================================ MENI ================================");
-                Console.WriteLine($"Prijavljeni korisnik: {_korisnik.ImePrezime} ({_korisnik.Uloga})");
-                Console.WriteLine();
+                
 
                 if (_korisnik.Uloga == TipKorisnika.GLAVNI_ENOLOG)
                 {
+                    Console.BackgroundColor = ConsoleColor.DarkCyan;
+                    Console.Clear();
+                    Console.WriteLine("================================ MENI ================================");
+                    Console.WriteLine($"Prijavljeni korisnik: {_korisnik.ImePrezime} ({_korisnik.Uloga})");
+                    Console.WriteLine();
                     Console.WriteLine("1. Pokreni fermentaciju");
                     Console.WriteLine("2. Upakuj vina u paletu");
                     Console.WriteLine("3. Posalji paletu u skladiste");
@@ -50,16 +54,27 @@ namespace Presentation.Meni
                 }
                 else // KELAR_MAJSTOR
                 {
+                    Console.BackgroundColor = ConsoleColor.Magenta;
+                    Console.Clear();
+                    Console.WriteLine("================================ MENI ================================");
+                    Console.WriteLine($"Prijavljeni korisnik: {_korisnik.ImePrezime} ({_korisnik.Uloga})");
+                    Console.WriteLine();
                     Console.WriteLine("1. Katalog vina");
                     Console.WriteLine("2. Prodaja (kreiranje fakture)");
                     Console.WriteLine("3. Pregled svih faktura");
                 }
 
-                Console.WriteLine("0. Izlaz");
+                Console.WriteLine("0. Logout");
                 Console.Write("Izbor: ");
                 var izbor = Console.ReadLine() ?? "";
 
-                if (izbor == "0") return true;
+                if (izbor == "0") {
+                    Console.WriteLine("Korisnik uspesno izlogovan,unesite enter za ponovno logovanje");
+                    Console.ReadLine();
+                    Console.BackgroundColor= ConsoleColor.Black;
+                    Console.Clear();
+                    return false;
+                        }
 
                 if (_korisnik.Uloga == TipKorisnika.GLAVNI_ENOLOG)
                 {

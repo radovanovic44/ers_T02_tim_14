@@ -19,7 +19,6 @@ namespace ERS_PROJEKAT
 {
     public class Program
     {
-        
         public static void Main()
         {
             // Baza podataka (XML)
@@ -39,31 +38,41 @@ namespace ERS_PROJEKAT
             IVinogradarstvoServis vinogradarstvo = new VinogradarstvoServis(lozeRepo, logger);
             IProizvodnjaVinaServis proizvodnja = new FermentacijaServisi(lozeRepo, vinoRepo, vinogradarstvo, logger);
 
-            // Login
-            var am = new AutentifikacioniMeni(auth);
-            Korisnik prijavljen;
-
-            while (!am.TryLogin(out prijavljen))
-            {
-                Console.WriteLine("Pogrešno korisničko ime ili lozinka. Pokušajte ponovo.");
-            }
-
-            
             ISkladistenjeServis skladiste = new VinskiPodrumServis(paleteRepo, logger, baza.Tabele);
-                
 
-            IPakovanjeServis pakovanje = new PakovanjeServis(paleteRepo, vinoRepo,proizvodnja, skladiste, logger);
+            IPakovanjeServis pakovanje = new PakovanjeServis(paleteRepo, vinoRepo, proizvodnja, skladiste, logger);
             IProdajaServis prodaja = new ProdajaServisi(vinoRepo, skladiste, faktureRepo, logger);
 
             // Meniji
             var katalogMeni = new KatalogVinaMeni(prodaja);
             var faktureMeni = new FaktureMeni(prodaja);
 
-            // uzimamo prvi podrum iz baze (inicijalni)
+
             var podrumId = baza.Tabele.VinskiPodrum.FirstOrDefault()?.Id ?? Guid.NewGuid();
 
-            var opcije = new OpcijeMeni(prijavljen, proizvodnja, pakovanje, katalogMeni, faktureMeni, podrumId);
-            opcije.PrikaziMeni();
+         
+            var am = new AutentifikacioniMeni(auth);
+
+         
+            while (true)
+            {
+                Korisnik prijavljen;
+
+                while (!am.TryLogin(out prijavljen))
+                {
+                    
+                    Console.WriteLine("Pogrešno korisničko ime ili lozinka. Pokušajte ponovo.");
+                    Console.WriteLine("Sada cete biti prebaceni na sledecu stranicu");
+                    Console.Write("==================================================");
+                    Thread.Sleep(2500);
+                    Console.Clear();
+                }
+
+                var opcije = new OpcijeMeni(prijavljen, proizvodnja, pakovanje, katalogMeni, faktureMeni, podrumId);
+                opcije.PrikaziMeni();
+
+                
+            }
         }
     }
 }
