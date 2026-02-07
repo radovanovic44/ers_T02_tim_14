@@ -64,10 +64,6 @@ namespace Services.ProdajaServisi
             if (vino == null) throw new Exception("Vino ne postoji.");
 
 
-            int trazenePalete = (int)Math.Ceiling((double)kolicina / PROCENA_FLASA_PO_PALETI);
-            var palete = _skladiste.IsporuciPaleteZaVino(vinoId, trazenePalete);
-
-
             int dostupno = _skladiste.DostupnoFlasa(vinoId);
             if (dostupno < kolicina)
                 throw new Exception($"Nema dovoljno vina na stanju. Trazeno: {kolicina}, dostupno: {dostupno}.");
@@ -93,7 +89,17 @@ namespace Services.ProdajaServisi
             _fakture.Dodaj(faktura);
 
 
-            _vinoRepo.Obrisi(vinoId);
+            // Oduzmi samo prodatu kolicinu sa paleta (ne brisi celu seriju)
+            var ok = _skladiste.OduzmiFlaseZaVino(vinoId, kolicina);
+            if (!ok) throw new Exception($"Nema dovoljno vina na stanju. Trazeno: {kolicina}, dostupno: {_skladiste.DostupnoFlasa(vinoId)}.");
+
+            // Obrisi vino iz baze samo ako je stvarno sve prodato (nema vise ni u podrumu ni u bazi)
+            if (_skladiste.DostupnoFlasa(vinoId) == 0)
+            {
+                var ponovo = _vinoRepo.PronadjiPoId(vinoId);
+                if (ponovo != null && ponovo.KolicinaFlasa == 0)
+                    _vinoRepo.Obrisi(vinoId);
+            }
 
             _logger.EvidentirajDogadjaj(
                 TipEvidencije.INFO,

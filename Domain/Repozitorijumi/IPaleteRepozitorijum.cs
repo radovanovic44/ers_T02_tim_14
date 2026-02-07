@@ -8,5 +8,6 @@ namespace Domain.Repozitorijumi
         Paleta DodajPaletu(Paleta paleta);
         Paleta PronadjiPaletuPoSifri(string sifra);
         IEnumerable<Paleta> SvePalete();
+        bool SacuvajIzmene();
     }
 }

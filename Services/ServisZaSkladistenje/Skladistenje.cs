@@ -98,5 +98,64 @@ namespace Services.SkladistenjeServisi
         {
             return _tabele.Palete.Any(p => p.Status == StatusPalete.Otpremljena && p.Vino.Id == vinoId);
         }
+
+
+        public bool OduzmiFlaseZaVino(Guid vinoId, int kolicina)
+        {
+            if (kolicina <= 0) return false;
+
+            int preostalo = kolicina;
+
+            // Uzmi sve otpremljene palete za to vino (FIFO - kako su dodate)
+            var palete = _tabele.Palete
+                .Where(p => p.Status == StatusPalete.Otpremljena
+                            && p.Vino != null
+                            && p.Vino.Id == vinoId)
+                .ToList();
+
+            foreach (var paleta in palete)
+            {
+                if (preostalo <= 0) break;
+
+                int naPaleti = paleta.Vino.KolicinaFlasa;
+
+                if (naPaleti <= 0) continue;
+
+                if (naPaleti <= preostalo)
+                {
+                    // Potrosi celu paletu
+                    preostalo -= naPaleti;
+                    paleta.Vino.KolicinaFlasa = 0;
+
+                    // Opcionalno: oznaci da je paleta prazna (da se ne racuna u stanje)
+                    paleta.Status = StatusPalete.Uklonjena;
+                }
+                else
+                {
+                    // Potrosi samo deo palete
+                    paleta.Vino.KolicinaFlasa -= preostalo;
+                    preostalo = 0;
+                }
+            }
+
+            // ako imas SaveChanges metod u repozitorijumu, pozovi ga ovde:
+            // _paleteRepo.SacuvajIzmene();
+
+            if (preostalo > 0)
+            {
+                _logger.EvidentirajDogadjaj(
+                    TipEvidencije.WARNING,
+                    $"Trazeno {kolicina}, ali nije bilo dovoljno flasa za vino {vinoId}. Nedostaje: {preostalo}"
+                );
+                return false;
+            }
+
+            _logger.EvidentirajDogadjaj(
+                TipEvidencije.INFO,
+                $"Prodato {kolicina} flasa za vino {vinoId} (skinuto sa paleta)."
+            );
+            return true;
+        }
+
     }
 }

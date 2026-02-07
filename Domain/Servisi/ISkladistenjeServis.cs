@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Domain.Modeli;
 
 namespace Domain.Servisi
@@ -12,5 +13,7 @@ namespace Domain.Servisi
         int DostupnoFlasa(Guid vinoId);
 
         bool ImaNaStanju(Guid vinoId);
+
+        bool OduzmiFlaseZaVino(Guid vinoId, int kolicina);
     }
 }

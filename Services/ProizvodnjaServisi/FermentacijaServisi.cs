@@ -28,11 +28,9 @@ namespace Services.ProizvodnjaServisi
 
         public Vino ZahtevZaVino(Guid id, int kolicina)
         {
-            if (kolicina <= 0)
-                throw new ArgumentException("Kolicina mora biti veca od nule.");
+            if (kolicina <= 0) throw new ArgumentException("Kolicina mora biti veca od nule.");
 
             var vinoUBazi = _vinoRepo.PronadjiPoId(id);
-
             if (vinoUBazi == null)
                 throw new KeyNotFoundException("Vino nije pronadjeno.");
 
@@ -40,17 +38,15 @@ namespace Services.ProizvodnjaServisi
             {
                 _logger.EvidentirajDogadjaj(
                     TipEvidencije.WARNING,
-                    $"Trazeno {kolicina} vina ({vinoUBazi.Kategorija}) dostupno {vinoUBazi.KolicinaFlasa}."
-                );
-
+                    $"Trazeno {kolicina} vina ({vinoUBazi.Kategorija}), dostupno {vinoUBazi.KolicinaFlasa}.");
                 throw new InvalidOperationException("Nema dovoljno vina na stanju.");
             }
 
-            // skini sa stanja
+            // Skini sa stanja u "bazi"
             vinoUBazi.KolicinaFlasa -= kolicina;
             _vinoRepo.SacuvajIzmene();
 
-            // vrati izdvojenu kolicinu kao novi objekat
+            // Vrati "izdvojenu" kolicinu kao zaseban objekat (na paleti/fakturi)
             return new Vino(
                 vinoUBazi.Id,
                 vinoUBazi.Naziv,
@@ -59,11 +55,8 @@ namespace Services.ProizvodnjaServisi
                 vinoUBazi.SifraSerije,
                 vinoUBazi.loze,
                 vinoUBazi.DatumFlasiranja,
-                kolicina
-            );
+                kolicina);
         }
-
-
 
 
         public bool ZapocniFermentaciju(KategorijaVina kategorijaVina, int brojFlasa, double zapreminaFlase)

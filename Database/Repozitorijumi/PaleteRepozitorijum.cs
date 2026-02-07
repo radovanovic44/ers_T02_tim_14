@@ -1,4 +1,5 @@
-﻿using Domain.BazaPodataka;
+﻿using System.Linq;
+using Domain.BazaPodataka;
 using Domain.Modeli;
 using Domain.Repozitorijumi;
 
@@ -22,12 +23,19 @@ namespace Database.Repozitorijumi
 
         public Paleta PronadjiPaletuPoSifri(string sifra)
         {
-            return _baza.Tabele.Palete.First(p => p.Sifra == sifra);
+            return _baza.Tabele.Palete.FirstOrDefault(p => p.Sifra == sifra);
         }
 
         public IEnumerable<Paleta> SvePalete()
         {
             return _baza.Tabele.Palete;
+        }
+
+
+        public bool SacuvajIzmene()
+        {
+            _baza.SacuvajPromene();
+            return true;
         }
 
 

@@ -67,6 +67,36 @@ namespace Services.PakovanjeServisi
                     return (false, new Paleta());
                 }
 
+                // Ako vec postoji (delimicno) upakovana paleta za isto vino, dopuni je ali nikad preko 24.
+                // Ako je paleta puna (24/24), pravi se nova paleta.
+                var postojeca = _paleteRepo.SvePalete()
+                    .FirstOrDefault(p => p.VinskiPodrumId == vinskiPodrumId
+                                         && p.Status == StatusPalete.Upakovana
+                                         && p.Vino != null
+                                         && p.Vino.Id == vinoId
+                                         && p.Vino.KolicinaFlasa < MAX_FLASA_PO_PALETI);
+
+                int preostaloZaNovuPaletu = 0;
+
+                if (postojeca != null)
+                {
+                    var vecUpakovano = postojeca.Vino?.KolicinaFlasa ?? 0;
+                    var slobodno = MAX_FLASA_PO_PALETI - vecUpakovano;
+
+                    if (slobodno <= 0)
+                    {
+                        // paleta je puna - ne dopunjavaj
+                        postojeca = null;
+                    }
+                    else if (brojFlasa > slobodno)
+                    {
+                        // napuni postojecu do 24, ostatak ide na novu paletu
+                        preostaloZaNovuPaletu = brojFlasa - slobodno;
+                        brojFlasa = slobodno;
+                    }
+                }
+
+
                 Vino vino;
                 try
                 {
@@ -93,6 +123,27 @@ namespace Services.PakovanjeServisi
                     vino = _proizvodnjaVina.ZahtevZaVino(kandidatId, brojFlasa);
                 }
 
+                // Ako imamo postojecu (delimicnu) paletu - dopuni nju.
+                if (postojeca != null)
+                {
+                    postojeca.Vino.KolicinaFlasa += vino.KolicinaFlasa;
+
+                    _paleteRepo.SacuvajIzmene();
+
+                    _logger.EvidentirajDogadjaj(
+                        TipEvidencije.INFO,
+                        $"Dopunjena paleta {postojeca.Sifra} (+{vino.KolicinaFlasa} flasa) => {postojeca.Vino.KolicinaFlasa}/{MAX_FLASA_PO_PALETI}.");
+
+                    // Ako je korisnik trazio vise nego sto staje, ostatak upakuj u novu paletu (nikad preko 24 na jednu).
+                    if (preostaloZaNovuPaletu > 0)
+                    {
+                        return UpakujVina(vinskiPodrumId, vinoId, preostaloZaNovuPaletu, zapreminaFlase);
+                    }
+
+                    return (true, postojeca);
+                }
+
+                // Inace - napravi novu paletu.
                 var paleta = new Paleta
                 {
                     Sifra = $"PL-{DateTime.Now:yyyy}-{Guid.NewGuid()}",
@@ -106,7 +157,7 @@ namespace Services.PakovanjeServisi
 
                 _logger.EvidentirajDogadjaj(
                     TipEvidencije.INFO,
-                    $"Upakovana paleta {paleta.Sifra} ({paleta.Vino.KolicinaFlasa} flasa) - kategorija {paleta.Vino.Kategorija}.");
+                    $"Upakovana paleta {paleta.Sifra} ({paleta.Vino.KolicinaFlasa}/{MAX_FLASA_PO_PALETI} flasa) - kategorija {paleta.Vino.Kategorija}.");
 
                 return (true, paleta);
             }
@@ -117,7 +168,7 @@ namespace Services.PakovanjeServisi
             }
         }
 
-     
+        // Backward kompatibilnost: zadrzan stari potpis
         public (bool, Paleta) UpakujVina(Guid vinskiPodrumId, KategorijaVina kategorija, int brojFlasa, double zapreminaFlase)
         {
             var vinoId = _vinoRepo.VratiSve()
@@ -171,7 +222,7 @@ namespace Services.PakovanjeServisi
             }
         }
 
-        
+        // Backward kompatibilnost: slanje prve upakovane palete
         public bool PosaljiPaletuUSkladiste(Guid vinskiPodrumId)
         {
             var prva = VratiUpakovanePalete(vinskiPodrumId).FirstOrDefault();
